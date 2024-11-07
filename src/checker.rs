@@ -6,6 +6,35 @@ use crate::{
 };
 
 impl<'i> ProgramBuilder<'i> {
+
+    fn compare(&self, left: &Tree, right: &Tree, equiv: &mut BTreeMap<VarId, VarId>) -> bool {
+        match (left, right) {
+            (Tree::Agent { id: idl, aux: auxl }, Tree::Agent { id: idr, aux: auxr }) => {
+            	if idl == idr {
+                    auxl
+                        .iter()
+                        .zip(auxr.iter())
+                        .all(|(a, b)| self.compare(a, b, equiv))
+                } else {
+                	// TODO somehow check auxiliary ports, there must be a right way to do this :)
+                	self.is_subtype_of(*idl, *idr) && auxl.is_empty() && auxr.is_empty()
+                }
+            }
+            (Tree::Var { id: idl }, Tree::Var { id: idr }) => {
+                equiv.insert(*idl, *idr).is_none_or(|x| x == *idr)
+            }
+            _ => false,
+        }
+    }
+    pub fn is_subtype_of(&self, sub: AgentId, sup: AgentId) -> bool {
+        let system = self.interaction_system.as_ref().unwrap().clone();
+        for a in self.agent_scope.values() {
+        	if system.has_rule(*a, sup) && !system.has_rule(*a, sub) {
+        		return false;
+        	}
+        }
+        return true;
+    }
     pub fn get_type_of(&self, agent: AgentId) -> Option<AgentId> {
         let mut net = Net::default();
         net.system = self.interaction_system.as_ref().unwrap().clone();
@@ -137,26 +166,11 @@ impl<'i> ProgramBuilder<'i> {
                     .collect()
             };
 
-            fn compare(left: &Tree, right: &Tree, equiv: &mut BTreeMap<VarId, VarId>) -> bool {
-                match (left, right) {
-                    (Tree::Agent { id: idl, aux: auxl }, Tree::Agent { id: idr, aux: auxr }) => {
-                        idl == idr
-                            && auxl
-                                .iter()
-                                .zip(auxr.iter())
-                                .all(|(a, b)| compare(a, b, equiv))
-                    }
-                    (Tree::Var { id: idl }, Tree::Var { id: idr }) => {
-                        equiv.insert(*idl, *idr).is_none_or(|x| x == *idr)
-                    }
-                    _ => false,
-                }
-            }
             let mut map = BTreeMap::new();
             let eq = trees_1
                 .iter()
                 .zip(trees_2.iter())
-                .all(|(a, b)| compare(a, b, &mut map));
+                .all(|(a, b)| self.compare(a, b, &mut map));
             if !eq {
                 let agents: BTreeMap<AgentId, String> = self
                     .agent_scope
@@ -176,7 +190,7 @@ impl<'i> ProgramBuilder<'i> {
                         "{}\t|\t{}\t|\t{}",
                         net.show_tree(&show_agent, &mut scope, &mut visited, a),
                         net.show_tree(&show_agent, &mut scope, &mut visited, b),
-                        compare(a, b, &mut map)
+                        self.compare(a, b, &mut map)
                     );
                 }
             }

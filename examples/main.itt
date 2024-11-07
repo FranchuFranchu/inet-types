@@ -35,10 +35,12 @@ Nat.id(Nat.zero) = Nat.zero
 	i_type = !Bool
 	o_type = Bool
 }
+Bool = !Erasable
+
 Era = Bool.true
 Era = Bool.false
 ::(:(value type)) = Era {
-	type = !Bool
+	type = !Erasable
 	value = Era
 }
 
