@@ -1,0 +1,31 @@
+#[
+	You can write any untyped program in inet-types; types are only necessary if you want to type-check
+	This is a good starting point to learn inet-types.
+]
+
+Era = Bool.true
+Era = Bool.false
+
+Bool.true = Bool.and(x x)
+Bool.false = Bool.and(Era Bool.false)
+
+Bool.true = Bool.or(Era Bool.true)
+Bool.false = Bool.or(x x)
+
+Bool.true = Bool.not(Bool.false)
+Bool.false = Bool.not(Bool.true)
+
+Nat.add(x x) = Nat.zero
+Nat.add(x Nat.succ(y)) = Nat.succ(Nat.add(x y))
+
+Reduce[{
+	Nat.add(Nat.succ(Nat.succ(Nat.zero)) ?out) = Nat.succ(Nat.succ(Nat.zero))
+}]
+
+
+Reduce[{
+	Bool.or(a1 Bool.not(out)) = a2
+	out = ?out
+	Bool.not(a1) = Bool.true
+	Bool.not(a2) = Bool.false
+}]

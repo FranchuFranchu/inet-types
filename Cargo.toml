@@ -1,0 +1,7 @@
+[package]
+name = "inet-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+TSPL = "0.0.13"

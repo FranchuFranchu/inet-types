@@ -1,0 +1,114 @@
+#[ Typing things ]
+:(a b) = :(a b)
+::(a) = ::(a)
+
+#[ Definition of Bool ]
+Bool = !Bool
+::(:(Bool Type)) = Bool
+
+::(:(value type)) = Bool.false {
+	type = Bool
+	value = Bool.false
+}
+::(:(value type)) = Bool.true {
+	type = Bool
+	value = Bool.true
+}
+::(:(value type)) = Bool.false {
+	type = Bool
+	value = Bool.false
+}
+
+::(:(Nat Type)) = Nat
+
+Bool.id(Bool.true) = Bool.true
+Bool.id(Bool.false) = Bool.false
+::(:(Bool.id(i) !Bool)) = Bool.id(::(:(i Bool)))
+
+Nat.id(Nat.succ(x)) = Nat.succ(x)
+Nat.id(Nat.zero) = Nat.zero
+::(:(Nat.id(i) !Nat)) = Nat.id(::(:(i Nat)))
+
+::(:(value type)) = Bool.and(::(:(i i_type)) ::(:(o o_type))) {
+	value = Bool.and(i o)
+	type = !Bool
+	i_type = !Bool
+	o_type = Bool
+}
+Era = Bool.true
+Era = Bool.false
+::(:(value type)) = Era {
+	type = !Bool
+	value = Era
+}
+
+Dup(Bool.true Bool.true) = Bool.true
+Dup(Bool.false Bool.false) = Bool.false
+::(:(v0 !Bool)) = Dup(::(:(v1 Bool)) ::(:(v2 Bool))) {
+	v0 = Dup(v1 v2)
+}
+
+Bool.and(Bool.id(x) x) = Bool.true
+Bool.and(Era Bool.false) = Bool.false
+
+Nat = !Nat
+Nat.add(Nat.id(x) x) = Nat.zero
+Nat.add(x Nat.succ(y)) = Nat.succ(Nat.add(x y))
+
+::(:(value type)) = Nat.zero {
+	value = Nat.zero
+	type = Nat
+}
+::(:(value type)) = Nat.succ(::(:(pred pred_type))) {
+	value = Nat.succ(pred)
+	type = Nat
+	pred_type = !Nat
+}
+::(:(value type)) = Nat.add(::(:(i i_type)) ::(:(o o_type))) {
+	value = Nat.add(i o)
+	type = !Nat
+	i_type = !Nat
+	o_type = Nat
+}
+
+Bool.true = Cond(Bool)
+Bool.false = Cond(Nat)
+::(:(value type)) = Cond(::(:(ret Type))) {
+	value = Cond(ret)
+	type = !Bool
+}
+
+Bool.true = DepTest(Bool.true)
+Bool.false = DepTest(Nat.zero)
+::(:(value !Bool)) = DepTest(::(:(ret output_type))) {
+	Dup(value_0 value_1) = value
+	Cond(output_type) = value_0
+	DepTest(ret) = value_1
+}
+
+
+Reduce[{
+	left = Nat.add(::(?a) ::(?b))
+	right = Nat.zero
+	left = right
+}]
+
+Reduce[{
+	left = Nat.add(::(?a) ::(?b))
+	right = Nat.zero
+	left = ::(d)
+	right = ::(d)
+}]
+
+Reduce[{
+	left = Bool.and(::(?a) ::(?b))
+	right = Bool.true(::(?c))
+	left = right
+}]
+
+Reduce[{
+	left = Bool.and(::(?a) ::(?b))
+	right = Bool.true(::(?c))
+	left = ::(d)
+	right = ::(d)
+}]
