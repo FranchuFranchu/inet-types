@@ -18,12 +18,24 @@ book = item*
 
 ### Basic syntax
 
-Trees are either variables, which start with lowercase letters, or agents
+Trees are either variables, which start with lowercase letters, or agents, which start with uppercase 
 
 ### Scopes
 
-`{}` introduces a scope. A scope allows defining new interactions and local variables.
+`{}` introduces a scope. A scope allows defining local agents and local variables.
 
-## Typing
+## Special agents
 
-Typing works using two agents: `:`, the annotation agent, and `::` which is the annotator agent.
+### Inverse agent
+
+`~` is the inverse agent. `a = ~(b)` makes `a` the inverse agent of `b`. Each agent type `T` has an inverse agent type `~T`. `~T` is the type of all agents that can interact with agents of type `T`. In other words, it is the supertype of the types of agents that can interact with agents of type `T`. The `~` operator is involutive, so `~~T = T` . 
+
+### Annotation agent
+
+`:` is the annotation agent type. The first port contains the value, and the second port contains the type.
+
+### Annotator agent
+
+`::` is the annotator agent type. It can annotate whole trees with their types. `::(a) ~ b` makes `a` the annotated version of the tree `b`.
+
+

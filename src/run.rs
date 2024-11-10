@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, rc::Rc};
 
 #[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Ord, Eq)]
-pub struct AgentId(pub u64);
+pub struct AgentId(pub u64, pub u64);
 #[derive(Clone, Debug, Copy, PartialEq, PartialOrd, Ord, Eq)]
 pub struct VarId(pub u64);
 
@@ -17,23 +17,31 @@ pub struct InteractionRule {
     pub right_ports: Vec<Tree>,
 }
 
-#[derive(Debug, Default)]
 pub struct InteractionSystem {
-    pub rules: BTreeMap<AgentId, BTreeMap<AgentId, InteractionRule>>,
+    pub get: Box<dyn Fn(&AgentId, &AgentId) -> Option<InteractionRule>>,
+}
+
+impl std::fmt::Debug for InteractionSystem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
+}
+
+impl Default for InteractionSystem {
+    fn default() -> Self {
+        Self { get: Box::new(|a, b| None) }
+    }
 }
 
 impl InteractionSystem {
-    pub fn add_rule(&mut self, a: AgentId, b: AgentId, rule: InteractionRule) {
-        self.rules.entry(a).or_default().insert(b, rule);
-    }
     pub fn get_rule(
         &self,
         a: AgentId,
         b: AgentId,
-    ) -> (Option<&InteractionRule>, Option<&InteractionRule>) {
+    ) -> (Option<InteractionRule>, Option<InteractionRule>) {
         (
-            self.rules.get(&a).and_then(|x| x.get(&b)),
-            self.rules.get(&b).and_then(|x| x.get(&a)),
+            (self.get)(&a, &b),
+            (self.get)(&b, &a),
         )
     }
     pub fn has_rule(&self, a: AgentId, b: AgentId) -> bool {
@@ -102,9 +110,9 @@ impl Net {
                 let rules = self.system.clone();
                 let (rule, rule_flip) = rules.get_rule(id1, id2);
                 if let Some(r) = rule {
-                    self.apply_rule(r, aux1, aux2);
+                    self.apply_rule(&r, aux1, aux2);
                 } else if let Some(r) = rule_flip {
-                    self.apply_rule(r, aux2, aux1);
+                    self.apply_rule(&r, aux2, aux1);
                 } else {
                     self.stuck
                         .push((Agent { id: id1, aux: aux1 }, Agent { id: id2, aux: aux2 }));

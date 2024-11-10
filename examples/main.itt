@@ -1,116 +1,156 @@
-#[ Typing things ]
-:(a b) = :(a b)
-::(a) = ::(a)
+:(a b) ~ :(a b)
+::(a) ~ ::(a)
 
-#[ Definition of Bool ]
-Bool = !Bool
-::(:(Bool Type)) = Bool
+#[ 
+	Define the boolean type.
+	These two lines say that:
+	Bool.true: Bool
+	Bool.false: Bool
+]
 
-::(:(value type)) = Bool.false {
-	type = Bool
-	value = Bool.false
+::(:(Bool.true Bool)) ~ Bool.true
+::(:(Bool.false Bool)) ~ Bool.false
+
+#[
+	Define an agent that consumes Bools.
+	It is of type ~Bool.
+
+	~Bool is the type that all agents that interact with Bool share.
+	It is the supertype of the types of all agents that interact with Bool.
+
+	By saying Bool.not: ~Bool, we're making a weak assertion about Bool.not
+	We're saying that the only thing we know about it is that it can interact with Bool
+]
+
+::(:(Bool.not(value) type)) ~ Bool.not(::(ret_value ret_type)) {
+	value = ret_value
+	type = ~Bool
+	#[ It returns a Boolean through its auxiliary port ]
+	ret_type = Bool
 }
-::(:(value type)) = Bool.true {
-	type = Bool
-	value = Bool.true
-}
-::(:(value type)) = Bool.false {
-	type = Bool
-	value = Bool.false
-}
+Bool.not(x Bool) ~ Bool.true
+Bool.not(x Bool) ~ Bool.false
 
-::(:(Nat Type)) = Nat
+#[ 
+	Define the ~Erasure "trait" or "interface"
+	Era consumes erasable things, so it's of type ~Erasure
 
-Bool.id(Bool.true) = Bool.true
-Bool.id(Bool.false) = Bool.false
-::(:(Bool.id(i) !Bool)) = Bool.id(::(:(i Bool)))
+]
+::(:(Era ~Erasure)) ~ Era
 
-Nat.id(Nat.succ(x)) = Nat.succ(x)
-Nat.id(Nat.zero) = Nat.zero
-::(:(Nat.id(i) !Nat)) = Nat.id(::(:(i Nat)))
+#[
+	Bool implements Erasure
+]
+~Erasure ~ Bool
+Era ~ Bool.true
+Era ~ Bool.false
 
-::(:(value type)) = Bool.and(::(:(i i_type)) ::(:(o o_type))) {
-	value = Bool.and(i o)
-	type = !Bool
-	i_type = !Bool
-	o_type = Bool
-}
-Bool = !Erasable
+::(:(Bool.and(x y) ~Bool)) ~ Bool.and(::(:(x ~Bool)) ::(:(y Bool)))
+Bool.and(x x) ~ Bool.true
+Bool.and(Era Bool.false) ~ Bool.false
 
-Era = Bool.true
-Era = Bool.false
-::(:(value type)) = Era {
-	type = !Erasable
-	value = Era
-}
+#[
+	Duplication trait
+]
+::(:(Dup(a b) ~Duplication)) ~ Dup(a b)
 
-Dup(Bool.true Bool.true) = Bool.true
-Dup(Bool.false Bool.false) = Bool.false
-::(:(v0 !Bool)) = Dup(::(:(v1 Bool)) ::(:(v2 Bool))) {
-	v0 = Dup(v1 v2)
-}
+~Duplication ~ Bool
+Dup(Bool.true Bool.true) ~ Bool.true
+Dup(Bool.false Bool.false) ~ Bool.false
 
-Bool.and(Bool.id(x) x) = Bool.true
-Bool.and(Era Bool.false) = Bool.false
+Dup(Bool Bool) ~ Bool
 
-Nat = !Nat
-Nat.add(Nat.id(x) x) = Nat.zero
-Nat.add(x Nat.succ(y)) = Nat.succ(Nat.add(x y))
+#[
+	Lists
+]
 
-::(:(value type)) = Nat.zero {
-	value = Nat.zero
-	type = Nat
-}
-::(:(value type)) = Nat.succ(::(:(pred pred_type))) {
-	value = Nat.succ(pred)
-	type = Nat
-	pred_type = !Nat
-}
-::(:(value type)) = Nat.add(::(:(i i_type)) ::(:(o o_type))) {
-	value = Nat.add(i o)
-	type = !Nat
-	i_type = !Nat
-	o_type = Nat
+
+::(:(v t)) ~ List.nil {
+	v = List.nil
+	t = List(Bot)
 }
 
-Bool.true = Cond(Bool)
-Bool.false = Cond(Nat)
-::(:(value type)) = Cond(::(:(ret Type))) {
-	value = Cond(ret)
-	type = !Bool
+::(:(v t)) ~ List.cons(x xs) {
+	x = ::(:(xv t0))
+	xs = ::(:(xsv ~List(t1)))
+	t0 = Dup(~(t1) t2)
+	v = List.cons(xv xsv)
+	t = List(t2)
 }
 
-Bool.true = DepTest(Bool.true)
-Bool.false = DepTest(Nat.zero)
-::(:(value !Bool)) = DepTest(::(:(ret output_type))) {
-	Dup(value_0 value_1) = value
-	Cond(output_type) = value_0
-	DepTest(ret) = value_1
+::(:(v t)) ~ List.push(::(:(elem elemt)) ::(:(out outt)) ) {
+	v = List.push(elem out)
+	t = ~List(t1)
+	elemt = Dup(~(t1) t2)
+	outt = List(t2)
 }
 
+List.cons(x xs) ~ List.push(elem out) {
+	xs = List.push(elem tail)
+	out = List.cons(x tail)
+}
+List.nil ~ List.push(elem out) {
+	out = List.cons(elem List.nil)
+}
 
+#[
+	Pair. Pair can also act as a function.
+]
+
+::(:(v t)) ~ Pair.new(:(av at) :(bv bt)) {
+	t = Pair(at bt)
+	v = Pair.new(av bv)
+}
+
+#[
+	Define natural numbers
+]
+
+::(:(Nat.zero Nat)) ~ Nat.zero
+::(:(Nat.succ(x) Nat)) ~ Nat.succ(::(:(x ~Nat)))
+
+~Duplication ~ Nat
+Dup(Nat.zero Nat.zero) ~ Nat.zero
+Dup(Nat.succ(a0) Nat.succ(a1)) ~ Nat.succ(Dup(a0 a1))
+
+Dup(Nat Nat) ~ Nat
+
+~Nat ~ Bot
+Dup(Bot Bot) ~ Bot
+Bot ~ ~Duplication
+
+
+::(:(List.range(x) ~Nat)) ~ List.range(::(:(x List(Nat))))
+Nat.zero ~ List.range(List.cons(Nat.zero List.nil))
+Nat.succ(Dup(a0 a1)) ~ List.range(out) {
+	AddOne(List.cons(Nat.succ(x) xs)) ~ List.cons(x AddOne(xs))
+	AddOne(List.nil) ~ List.nil
+	::(:(AddOne(x) ~List(~Nat))) ~ AddOne(:(x List(Nat)))
+
+	a0 = List.range(AddOne tail)
+	out = List.cons(Nat.zero tail)
+}
+
+#[
+	TODO: Doesn't work yet, because we can't conditionally implement traits.
+
+	::(:(v t)) ~ List.map(::(:(av at)) ::(:(bv bt))) {
+		v = List.map(av bv)
+		t = ~List(input_type)
+		at = Pair(input_type output_type)
+		bt = List(output_type)
+	}
+
+	List.nil ~ List.map(Era List.nil)
+
+	List.cons(x xs) ~ List.map(fun ret) {
+		Dup(fun0 fun1) = fun
+		Pair(in out) = fun0
+		in = x
+		xs = List.map(fun1 mapped_tail)
+		ret = List.cons(out mapped_tail)
+	}
+]
 Reduce[{
-	left = Nat.add(::(?a) ::(?b))
-	right = Nat.zero
-	left = right
-}]
-
-Reduce[{
-	left = Nat.add(::(?a) ::(?b))
-	right = Nat.zero
-	left = ::(d)
-	right = ::(d)
-}]
-
-Reduce[{
-	left = Bool.and(::(?a) ::(?b))
-	right = Bool.true(::(?c))
-	left = right
-}]
-
-Reduce[{
-	left = Bool.and(::(?a) ::(?b))
-	right = Bool.true(::(?c))
-	left = ::(d)
-	right = ::(d)
+	List.range(?aa) = Nat.succ(Nat.succ(Nat.succ(zero)))
 }]
