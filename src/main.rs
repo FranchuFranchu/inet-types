@@ -11,8 +11,8 @@ pub mod compiler;
 pub mod run;
 pub mod syntax;
 
-use run::{InteractionSystem, Net as RtNet, Tree as RtTree, VarId};
-use syntax::{Tree};
+use run::{InteractionSystem, Tree as RtTree, VarId};
+use syntax::Tree;
 
 impl<'i> ProgramBuilder<'i> {
     pub fn tree_ast_to_rt(&mut self, tree: Tree) -> RtTree {
@@ -21,8 +21,8 @@ impl<'i> ProgramBuilder<'i> {
                 let id = self.get_or_new_agent_id(name);
                 self.set_arity(id, aux.len() as u64);
                 RtTree::Agent {
-                        id: id,
-                        aux: aux.into_iter().map(|x| self.tree_ast_to_rt(x)).collect(),
+                    id: id,
+                    aux: aux.into_iter().map(|x| self.tree_ast_to_rt(x)).collect(),
                 }
             }
             Tree::Var(id) => RtTree::Var {
@@ -42,7 +42,13 @@ impl<'i> ProgramBuilder<'i> {
         Ok(r)
     }
     fn enter(&mut self) {
-        self.levels.push(builder::Level { agent_scope: BTreeMap::new(), vars: Vars { net: Default::default(), var_scope: BTreeMap::new() } });
+        self.levels.push(builder::Level {
+            agent_scope: BTreeMap::new(),
+            vars: Vars {
+                net: Default::default(),
+                var_scope: BTreeMap::new(),
+            },
+        });
     }
     fn exit(&mut self) -> Option<builder::Level> {
         self.levels.pop()
@@ -75,7 +81,13 @@ impl<'i> ProgramBuilder<'i> {
                         let right = self.parse_tree()?;
 
                         let interaction = (self.tree_ast_to_rt(left), self.tree_ast_to_rt(right));
-                        self.levels.last_mut().unwrap().vars.net.interactions.push(interaction);
+                        self.levels
+                            .last_mut()
+                            .unwrap()
+                            .vars
+                            .net
+                            .interactions
+                            .push(interaction);
                     }
                     Some('~') => {
                         self.consume("~")?;
@@ -89,21 +101,37 @@ impl<'i> ProgramBuilder<'i> {
                         let Tree::Agent(r_name, r_children) = right else {
                             return Err("Invalid item found!".to_string());
                         };
-                        let l_children: Vec<_> = l_children.into_iter().map(|x| self.tree_ast_to_rt(x)).collect();
-                        let r_children: Vec<_> = r_children.into_iter().map(|x| self.tree_ast_to_rt(x)).collect();
+                        let l_children: Vec<_> = l_children
+                            .into_iter()
+                            .map(|x| self.tree_ast_to_rt(x))
+                            .collect();
+                        let r_children: Vec<_> = r_children
+                            .into_iter()
+                            .map(|x| self.tree_ast_to_rt(x))
+                            .collect();
                         self.maybe_parse_scope()?;
                         let mut scope = self.exit().unwrap();
-                        self.levels.last_mut().unwrap().agent_scope.extend(scope.agent_scope);
+                        self.levels
+                            .last_mut()
+                            .unwrap()
+                            .agent_scope
+                            .extend(scope.agent_scope);
 
                         scope.vars.net.normal();
-                        let l_children = l_children.into_iter().map(|x| scope.vars.net.substitute(x)).collect();
-                        let r_children = r_children.into_iter().map(|x| scope.vars.net.substitute(x)).collect();
-                        
+                        let l_children = l_children
+                            .into_iter()
+                            .map(|x| scope.vars.net.substitute(x))
+                            .collect();
+                        let r_children = r_children
+                            .into_iter()
+                            .map(|x| scope.vars.net.substitute(x))
+                            .collect();
+
                         let def = Definition {
                             left_id: self.get_or_new_agent_id(l_name),
                             left_children: l_children,
                             right_id: self.get_or_new_agent_id(r_name),
-                            right_children: r_children, 
+                            right_children: r_children,
                         };
                         self.def.push(def);
                     }
@@ -132,56 +160,81 @@ impl<'i> ProgramBuilder<'i> {
         let annotator_agent = self.get_or_new_agent_id("::".to_string());
         let arities = self.arities.clone();
         let def = self.def.clone();
-        let agent_scope_back = self.agent_scope_back.clone();
-        let isys = Rc::new(InteractionSystem { get: Box::new(move |a, b| {
-            for definition in &def {
-                //println!("{:?}", (agent_scope_back.get(&definition.left_id), agent_scope_back.get(&definition.right_id)));
-                //println!("{:?}", (agent_scope_back.get(&a), agent_scope_back.get(&b)));
-                //println!("\n    {:?}\n    {:?}\n    {:?}", a, b, definition);
-                if *a == definition.left_id && *b == definition.right_id {
-                    //println!("Yay!");
+        let _agent_scope_back = self.agent_scope_back.clone();
+        let isys = Rc::new(InteractionSystem {
+            get: Box::new(move |a, b| {
+                for definition in &def {
+                    //println!("{:?}", (agent_scope_back.get(&definition.left_id), agent_scope_back.get(&definition.right_id)));
+                    //println!("{:?}", (agent_scope_back.get(&a), agent_scope_back.get(&b)));
+                    //println!("\n    {:?}\n    {:?}\n    {:?}", a, b, definition);
+                    if *a == definition.left_id && *b == definition.right_id {
+                        //println!("Yay!");
+                        return Some(run::InteractionRule {
+                            left_ports: definition.left_children.clone(),
+                            right_ports: definition.right_children.clone(),
+                        });
+                    }
+                    if *b == definition.left_id && *a == definition.right_id {
+                        //println!("Yay!");
+                        return Some(run::InteractionRule {
+                            left_ports: definition.right_children.clone(),
+                            right_ports: definition.left_children.clone(),
+                        });
+                    }
+                }
+                if *a == antitype_agent && *b == antitype_agent {
                     return Some(run::InteractionRule {
-                        left_ports: definition.left_children.clone(),
-                        right_ports: definition.right_children.clone(),
+                        left_ports: vec![RtTree::Var { id: VarId(0) }],
+                        right_ports: vec![RtTree::Var { id: VarId(0) }],
                     });
                 }
-                if *b == definition.left_id && *a == definition.right_id {
-                    //println!("Yay!");
+                if *a == antitype_agent {
                     return Some(run::InteractionRule {
-                        left_ports: definition.right_children.clone(),
-                        right_ports: definition.left_children.clone(),
+                        left_ports: vec![RtTree::Agent {
+                            id: crate::run::AgentId(b.0, (b.1 + 1) % 2),
+                            aux: (0..arities[b])
+                                .map(|x| RtTree::Agent {
+                                    id: antitype_agent,
+                                    aux: vec![RtTree::Var { id: VarId(x) }],
+                                })
+                                .collect(),
+                        }],
+                        right_ports: (0..arities[b])
+                            .map(|x| RtTree::Var { id: VarId(x) })
+                            .collect(),
                     });
                 }
-            }
-            if *a == antitype_agent && *b == antitype_agent {
-
-                return Some(run::InteractionRule {
-                    left_ports: vec![RtTree::Var { id: VarId(0) }],
-                    right_ports: vec![RtTree::Var { id: VarId(0) }],
-                });
-            }
-            if *a == antitype_agent {
-                return Some(run::InteractionRule {
-                    left_ports: vec![RtTree::Agent { id: crate::run::AgentId(b.0, (b.1 + 1) % 2), aux: (0..arities[b]).map(|x| RtTree::Agent { id: antitype_agent, aux: vec![RtTree::Var { id: VarId(x) }]}).collect() }],
-                    right_ports: (0..arities[b]).map(|x| RtTree::Var { id: VarId(x) }).collect(),
-                });
-            }
-            if a.0 == b.0 && a.1 == (b.1 + 1) % 2 {
-                // A ~ ~A
-                // Interaction with the inverse
-                return Some(run::InteractionRule {
-                    left_ports: (0..arities[a]).map(|x| RtTree::Var { id: VarId(x) }).collect(),
-                    right_ports: (0..arities[a]).map(|x| RtTree::Var { id: VarId(x) }).collect(),
-                });
-            }
-            if *a == annotator_agent {
-                return Some(run::InteractionRule {
-                    left_ports: (0..arities[a]).map(|x| RtTree::Agent{ id: annotator_agent, aux: vec![RtTree::Var { id: VarId(x) }]}).collect(),
-                    right_ports: vec![RtTree::Agent { id: annotator_agent, aux: (0..arities[a]).map(|x| RtTree::Var { id: VarId(x) }).collect()}],
-                });
-            }
-            return None;
-        })});
+                if a.0 == b.0 && a.1 == (b.1 + 1) % 2 {
+                    // A ~ ~A
+                    // Interaction with the inverse
+                    return Some(run::InteractionRule {
+                        left_ports: (0..arities[a])
+                            .map(|x| RtTree::Var { id: VarId(x) })
+                            .collect(),
+                        right_ports: (0..arities[a])
+                            .map(|x| RtTree::Var { id: VarId(x) })
+                            .collect(),
+                    });
+                }
+                if *a == annotator_agent {
+                    return Some(run::InteractionRule {
+                        left_ports: (0..arities[a])
+                            .map(|x| RtTree::Agent {
+                                id: annotator_agent,
+                                aux: vec![RtTree::Var { id: VarId(x) }],
+                            })
+                            .collect(),
+                        right_ports: vec![RtTree::Agent {
+                            id: annotator_agent,
+                            aux: (0..arities[a])
+                                .map(|x| RtTree::Var { id: VarId(x) })
+                                .collect(),
+                        }],
+                    });
+                }
+                return None;
+            }),
+        });
         self.interaction_system = Some(isys.clone());
         isys
     }

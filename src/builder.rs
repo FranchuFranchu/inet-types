@@ -37,8 +37,18 @@ pub struct ProgramBuilder<'i> {
 }
 impl<'i> ProgramBuilder<'i> {
     pub fn agent_list<'a>(&'a self) -> impl Iterator<Item = AgentId> + 'a {
-        self.levels.iter().map(|x| x.agent_scope.values()).flatten().map(|x| *x)
-        .chain(self.levels.iter().map(|x| x.agent_scope.values()).flatten().map(|x| self.agent_inverse(*x)))
+        self.levels
+            .iter()
+            .map(|x| x.agent_scope.values())
+            .flatten()
+            .map(|x| *x)
+            .chain(
+                self.levels
+                    .iter()
+                    .map(|x| x.agent_scope.values())
+                    .flatten()
+                    .map(|x| self.agent_inverse(*x)),
+            )
     }
     pub fn new_agent_id(&mut self) -> AgentId {
         let a = AgentId(self.next_agent_id, 0);
@@ -49,7 +59,10 @@ impl<'i> ProgramBuilder<'i> {
         if b > 0 {
             format!("~{}", self.show_agent(AgentId(a, b - 1)))
         } else {
-            self.agent_scope_back.get(&AgentId(a, b)).unwrap().to_string()
+            self.agent_scope_back
+                .get(&AgentId(a, b))
+                .unwrap()
+                .to_string()
         }
     }
     pub fn get_or_new_agent_id(&mut self, n: String) -> AgentId {
@@ -60,18 +73,22 @@ impl<'i> ProgramBuilder<'i> {
             self.agent_scope_back.insert(id, n);
             id
         } else {
-
             if let Some(id) = self.get_agent_id(&n) {
                 id
             } else {
                 let id = self.new_agent_id();
-                self.levels.last_mut().unwrap().agent_scope.insert(n.clone(), id);
+                self.levels
+                    .last_mut()
+                    .unwrap()
+                    .agent_scope
+                    .insert(n.clone(), id);
                 self.agent_scope_back.insert(id, n.clone());
-                self.agent_scope_back.insert(self.agent_inverse(id), "~".to_string() + &n);
+                self.agent_scope_back
+                    .insert(self.agent_inverse(id), "~".to_string() + &n);
                 id
             }
         }
-        }
+    }
     pub fn set_arity(&mut self, a: AgentId, arity: u64) {
         self.arities.insert(a, arity);
         let inv = self.agent_inverse(a);
@@ -80,17 +97,17 @@ impl<'i> ProgramBuilder<'i> {
     pub fn get_agent_id(&self, n: &str) -> Option<AgentId> {
         for level in &self.levels {
             if let Some(a) = level.agent_scope.get(n) {
-                return Some(*a)
+                return Some(*a);
             }
-        };
+        }
         return None;
     }
     pub fn get_var_id(&self, n: &str) -> Option<VarId> {
         for level in &self.levels {
             if let Some(a) = level.vars.var_scope.get(n) {
-                return Some(*a)
+                return Some(*a);
             }
-        };
+        }
         return None;
     }
     pub fn get_or_new_var_id(&mut self, n: String) -> VarId {
@@ -111,7 +128,7 @@ impl<'i> ProgramBuilder<'i> {
             break;
         }
     }
-    pub fn agent_inverse(&self, AgentId(a, b): AgentId) -> AgentId{
-        AgentId(a, (b + 1)%2)
+    pub fn agent_inverse(&self, AgentId(a, b): AgentId) -> AgentId {
+        AgentId(a, (b + 1) % 2)
     }
 }

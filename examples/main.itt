@@ -22,7 +22,7 @@
 	We're saying that the only thing we know about it is that it can interact with Bool
 ]
 
-::(:(Bool.not(value) type)) ~ Bool.not(::(ret_value ret_type)) {
+::(:(Bool.not(value) type)) ~ Bool.not(::(:(ret_value ret_type))) {
 	value = ret_value
 	type = ~Bool
 	#[ It returns a Boolean through its auxiliary port ]
@@ -30,6 +30,12 @@
 }
 Bool.not(x Bool) ~ Bool.true
 Bool.not(x Bool) ~ Bool.false
+
+#[ 
+	Define the natural type
+]
+::(:(Nat.zero Nat)) ~ Nat.zero
+::(:(Nat.succ(n) Nat)) ~ Nat.succ(::(:(n ~Nat)))
 
 #[ 
 	Define the ~Erasure "trait" or "interface"
@@ -44,6 +50,9 @@ Bool.not(x Bool) ~ Bool.false
 ~Erasure ~ Bool
 Era ~ Bool.true
 Era ~ Bool.false
+
+
+#[ Using Era ]
 
 ::(:(Bool.and(x y) ~Bool)) ~ Bool.and(::(:(x ~Bool)) ::(:(y Bool)))
 Bool.and(x x) ~ Bool.true
@@ -93,64 +102,16 @@ List.nil ~ List.push(elem out) {
 	out = List.cons(elem List.nil)
 }
 
-#[
-	Pair. Pair can also act as a function.
-]
+#[ This determines what the return type of DepTest is ]
+::(:(DepTest.aux(x) ~Bool)) ~ DepTest.aux(::(:(x Type)))
+DepTest.aux(Bool) ~ Bool.true
+DepTest.aux(Nat) ~ Bool.false
 
-::(:(v t)) ~ Pair.new(:(av at) :(bv bt)) {
-	t = Pair(at bt)
-	v = Pair.new(av bv)
+::(:(v ~Bool)) ~ DepTest(::(:(r rt))) {
+	Dup(v0 v1) = v
+	v0 = DepTest(r)
+	v1 = DepTest.aux(rt)
 }
 
-#[
-	Define natural numbers
-]
-
-::(:(Nat.zero Nat)) ~ Nat.zero
-::(:(Nat.succ(x) Nat)) ~ Nat.succ(::(:(x ~Nat)))
-
-~Duplication ~ Nat
-Dup(Nat.zero Nat.zero) ~ Nat.zero
-Dup(Nat.succ(a0) Nat.succ(a1)) ~ Nat.succ(Dup(a0 a1))
-
-Dup(Nat Nat) ~ Nat
-
-~Nat ~ Bot
-Dup(Bot Bot) ~ Bot
-Bot ~ ~Duplication
-
-
-::(:(List.range(x) ~Nat)) ~ List.range(::(:(x List(Nat))))
-Nat.zero ~ List.range(List.cons(Nat.zero List.nil))
-Nat.succ(Dup(a0 a1)) ~ List.range(out) {
-	AddOne(List.cons(Nat.succ(x) xs)) ~ List.cons(x AddOne(xs))
-	AddOne(List.nil) ~ List.nil
-	::(:(AddOne(x) ~List(~Nat))) ~ AddOne(:(x List(Nat)))
-
-	a0 = List.range(AddOne tail)
-	out = List.cons(Nat.zero tail)
-}
-
-#[
-	TODO: Doesn't work yet, because we can't conditionally implement traits.
-
-	::(:(v t)) ~ List.map(::(:(av at)) ::(:(bv bt))) {
-		v = List.map(av bv)
-		t = ~List(input_type)
-		at = Pair(input_type output_type)
-		bt = List(output_type)
-	}
-
-	List.nil ~ List.map(Era List.nil)
-
-	List.cons(x xs) ~ List.map(fun ret) {
-		Dup(fun0 fun1) = fun
-		Pair(in out) = fun0
-		in = x
-		xs = List.map(fun1 mapped_tail)
-		ret = List.cons(out mapped_tail)
-	}
-]
-Reduce[{
-	List.range(?aa) = Nat.succ(Nat.succ(Nat.succ(zero)))
-}]
+DepTest(Bool.false) ~ Bool.true
+DepTest(Nat.zero) ~ Bool.false

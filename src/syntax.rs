@@ -1,6 +1,4 @@
-use std::collections::BTreeMap;
-
-use crate::{builder::ProgramBuilder, run::AgentId};
+use crate::builder::ProgramBuilder;
 use TSPL::Parser;
 
 #[derive(Debug)]
@@ -59,7 +57,8 @@ impl<'i> ProgramBuilder<'i> {
         let first = self
             .peek_one()
             .ok_or("Expected a character for ctr_name.")?;
-        if first.is_ascii_uppercase() || first.is_ascii_digit() || ".!#$%&/?*-_:;~".contains(first) {
+        if first.is_ascii_uppercase() || first.is_ascii_digit() || ".!#$%&/?*-_:;~".contains(first)
+        {
             self.advance_one();
             let rest = self.take_while(|c| Self::is_name_character(c));
             Ok(format!("{}{}", first, rest))
@@ -91,10 +90,10 @@ impl<'i> ProgramBuilder<'i> {
                         .iter()
                         .map(|(k, v)| (v.clone(), k.clone()))
                         .collect();
-                    let net = result
-                        .vars
-                        .net
-                        .show_net_compact(&|id| self.agent_scope_back.get(&id).unwrap().to_string(), &mut vars);
+                    let net = result.vars.net.show_net_compact(
+                        &|id| self.agent_scope_back.get(&id).unwrap().to_string(),
+                        &mut vars,
+                    );
                     println!("{}---", net);
                 }
             } else {
@@ -105,10 +104,10 @@ impl<'i> ProgramBuilder<'i> {
                     .iter()
                     .map(|(k, v)| (v.clone(), k.clone()))
                     .collect();
-                let net = result
-                    .vars
-                    .net
-                    .show_net_compact(&|id| self.agent_scope_back.get(&id).unwrap().to_string(), &mut vars);
+                let net = result.vars.net.show_net_compact(
+                    &|id| self.agent_scope_back.get(&id).unwrap().to_string(),
+                    &mut vars,
+                );
                 println!("{}", net);
             }
         } else {
@@ -145,5 +144,4 @@ impl<'i> ProgramBuilder<'i> {
         let var_name = self.parse_var_name()?;
         Ok(Tree::Var(var_name))
     }
-
 }

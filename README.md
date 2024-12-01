@@ -1,6 +1,6 @@
 # `inet-types`
 
-Types for interaction nets. Documentation not written yet
+Types for interaction nets. Documentation not written yet. Read [EXPLANATION.md], though.
 
 ## Syntax
 
@@ -16,19 +16,27 @@ item = macro
 book = item*
 ```
 
+
 ### Basic syntax
 
-Trees are either variables, which start with lowercase letters, or agents, which start with uppercase 
+Trees are either variables, which start with lowercase letters, or cells, which start with uppercase letters and then contain a space-separated list of trees in the auxiliary ports, enclosed by parnetheses.
 
 ### Scopes
 
 `{}` introduces a scope. A scope allows defining local agents and local variables.
 
+
+### Macros
+
+`Name[ ... ]`  is a macro usage, which is actually more like C's preprocessor directives. An example of one is `#[ ... ]`, which creates a comment.
+
 ## Special agents
 
 ### Inverse agent
 
-`~` is the inverse agent. `a = ~(b)` makes `a` the inverse agent of `b`. Each agent type `T` has an inverse agent type `~T`. `~T` is the type of all agents that can interact with agents of type `T`. In other words, it is the supertype of the types of agents that can interact with agents of type `T`. The `~` operator is involutive, so `~~T = T` . 
+`~` is the inverse agent. `a = ~(b)` makes `b` the inverse agent of `a`. Each agent type `T` has an inverse agent type `~T`. `~T` is the type of all agents that can interact with agents of type `T`. In other words, it is the supertype of the types of agents that can interact with agents of type `T`. The `~` operator is involutive, so `~~T = T` . 
+
+The `~` agent commutes through auxiliary ports in addition to changing a cell's symbol.
 
 ### Annotation agent
 

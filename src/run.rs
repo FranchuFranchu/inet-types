@@ -22,14 +22,16 @@ pub struct InteractionSystem {
 }
 
 impl std::fmt::Debug for InteractionSystem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(())
     }
 }
 
 impl Default for InteractionSystem {
     fn default() -> Self {
-        Self { get: Box::new(|a, b| None) }
+        Self {
+            get: Box::new(|_a, _b| None),
+        }
     }
 }
 
@@ -39,10 +41,7 @@ impl InteractionSystem {
         a: AgentId,
         b: AgentId,
     ) -> (Option<InteractionRule>, Option<InteractionRule>) {
-        (
-            (self.get)(&a, &b),
-            (self.get)(&b, &a),
-        )
+        ((self.get)(&a, &b), (self.get)(&b, &a))
     }
     pub fn has_rule(&self, a: AgentId, b: AgentId) -> bool {
         let (a, b) = self.get_rule(a, b);
