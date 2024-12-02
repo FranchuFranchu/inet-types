@@ -8,6 +8,11 @@
 	Bool.false: Bool
 ]
 
+::(:(Bool Type)) ~ Bool
+::(:(Nat Type)) ~ Nat
+::(:(~Erasure Type)) ~ ~Erasure
+::(:(~Duplication Type)) ~ ~Duplication
+
 ::(:(Bool.true Bool)) ~ Bool.true
 ::(:(Bool.false Bool)) ~ Bool.false
 
@@ -66,8 +71,6 @@ Bool.and(Era Bool.false) ~ Bool.false
 ~Duplication ~ Bool
 Dup(Bool.true Bool.true) ~ Bool.true
 Dup(Bool.false Bool.false) ~ Bool.false
-
-Dup(Bool Bool) ~ Bool
 
 #[
 	Lists

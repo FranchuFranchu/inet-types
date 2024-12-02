@@ -80,6 +80,37 @@ This is nice because rules can be self-documenting.
 
 To be clear, `~` defines interaction rules, while `=` is used to represent active pairs inside a net. Usually, `~` will be in top-level definitions, while `=` will appear inside rules to encode which active pairs will appear as the result of a reduction.
 
+An example of a full interaction system defined using this syntax follows:
+```
+#[ Implementation of Lafont's unary arithmetic interactions system ]
+
++(x x) ~ 0
++(arg out) ~ S(pred) {
+	out = S(sum)
+	pred = +(arg sum)
+}
+
+E ~ 0
+E ~ S(E)
+
+D(0 0) ~ 0
+D(S(a) S(b)) ~ S(D(a b))
+
+X(argument result) ~ S(pred) {
+	#[ 
+		This is an implementation of
+		x * S(y) = x * y + x
+
+		x is argument, y is pred.
+	] 
+	argument = D(a0 a1)
+	pred = X(a1 +(a0 result))
+}
+X(E 0) ~ 0
+```
+
+[This file](docs/lafont_arith.log) shows the result of reducing the active pair `X(S(S(0)) Output) = S(S(0))` step-by-step. Trees that start with `?` are automatically numbered variables. The substitution of variables is counted as a separate redex.
+
 ## Type-checking
 
 To talk about a program being well-typed, we first need to define what the equivalent of a runtime "type error" is. The equivalent we'll use is "undefined interactions". Undefined interactions are like typing errors. For example, if we define `True ~ Bool.not`, `False ~ Bool.not`, then `Zero ~ Bool.not` is a type error, because it is an undefined interaction.
@@ -232,6 +263,24 @@ If no undefined interactions appear, then the rule is well-typed.
 ## Examples
 
 Under this system, there is more than one way to implement ideas from other type systems and programming languages. It's not always clear what the best way to do these things is. I'll give a few examples here.
+
+### Typing arithmetic.
+
+The arithmetic interaction system described above can be easily typed:
+
+```
+:(a b) ~ :(a b)
+::(a) ~ ::(a)
+
+::(:(0 Nat)) ~ 0
+::(:(S(x) Nat)) ~ S(::(:(x ~Nat)))
+
+::(:(E ~Nat)) ~ E
+::(:(D(a b) ~Nat)) ~ D(::(:(a Nat)) ::(:(b Nat)))
+
+::(:(+(arg res) ~Nat)) ~ +(::(:(arg ~Nat)) ::(:(res Nat)))
+::(:(X(arg res) ~Nat)) ~ X(::(:(arg ~Nat)) ::(:(res Nat)))
+```
 
 ### Traits
 

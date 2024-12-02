@@ -1,0 +1,43 @@
+#[ Implementation of Lafont's arithmetic interactions system ]
+
++(x x) ~ 0
++(arg out) ~ S(pred) {
+	out = S(sum)
+	pred = +(arg sum)
+}
+
+E ~ 0
+E ~ S(E)
+
+D(0 0) ~ 0
+D(S(a) S(b)) ~ S(D(a b))
+
+X(argument result) ~ S(pred) {
+	#[ 
+		This is an implementation of
+		x * S(y) = x * y + x
+
+		x is argument, y is pred.
+	] 
+	argument = D(a0 a1)
+	pred = X(a1 +(a0 result))
+}
+X(E 0) ~ 0
+
+Reduce[{
+	X(S(S(0)) Output) = S(S(0))
+}]
+
+#[ Now, add typing ]
+
+:(a b) ~ :(a b)
+::(a) ~ ::(a)
+
+::(:(0 Nat)) ~ 0
+::(:(S(x) Nat)) ~ S(::(:(x ~Nat)))
+
+::(:(E ~Nat)) ~ E
+::(:(D(a b) ~Nat)) ~ D(::(:(a Nat)) ::(:(b Nat)))
+
+::(:(+(arg res) ~Nat)) ~ +(::(:(arg ~Nat)) ::(:(res Nat)))
+::(:(X(arg res) ~Nat)) ~ X(::(:(arg ~Nat)) ::(:(res Nat)))

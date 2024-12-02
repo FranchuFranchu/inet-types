@@ -216,6 +216,7 @@ impl<'i> ProgramBuilder<'i> {
                             .collect(),
                     });
                 }
+                /*
                 if *a == annotator_agent {
                     return Some(run::InteractionRule {
                         left_ports: (0..arities[a])
@@ -231,7 +232,7 @@ impl<'i> ProgramBuilder<'i> {
                                 .collect(),
                         }],
                     });
-                }
+                }*/
                 return None;
             }),
         });

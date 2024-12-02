@@ -57,7 +57,7 @@ impl<'i> ProgramBuilder<'i> {
         let first = self
             .peek_one()
             .ok_or("Expected a character for ctr_name.")?;
-        if first.is_ascii_uppercase() || first.is_ascii_digit() || ".!#$%&/?*-_:;~".contains(first)
+        if !first.is_ascii_lowercase() && !" ()[]{}=".contains(first)
         {
             self.advance_one();
             let rest = self.take_while(|c| Self::is_name_character(c));
@@ -80,7 +80,7 @@ impl<'i> ProgramBuilder<'i> {
             let mut result = self.exit().unwrap();
             result.vars.net.system = self.build_interaction_system();
 
-            if false {
+            if true {
                 // reduce and show each step
                 while let Some((a, b)) = result.vars.net.interactions.pop() {
                     result.vars.net.interact(a, b);
