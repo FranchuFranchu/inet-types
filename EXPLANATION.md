@@ -10,7 +10,7 @@ A cell is a node in an interaction net. A cell has a _symbol_, a single principa
 
 ## Syntax
 
-This document uses textual syntax to talk about interaction nets.
+This document uses textual syntax to talk about interaction nets. 
 
 A _tree_ is either a cell or a variable, which represents an aux-aux connection. Variable names start with a lowercase character.
 
@@ -18,23 +18,29 @@ A cell looks like this:
 ```
 SymbolName(a0 a1 ... an)
 ```
-Where `a{n}` are the trees plugged in to its auxiliary ports. Symbol names start with anything that is not a lowercase character or is in the string `" ()[]{}=~"`
+Where `a{n}` are the trees plugged in to its auxiliary ports. Symbol names start with anything that is not a lowercase character or is in the string `" ()[]{}="`
 
 An interaction net can be represented by a set of pairs of trees which form active pairs. Active pairs use the syntax `<tree> = <tree>`
 
-For example:
+For example, the following is a net with two active pairs:
 ```
-Times(out S(S(0))) = S(0)
-Times(out2 S(S(0))) = out
+Mult(a1 Add(a1 out)) = S(0)
+Dup(a0 a1) = S(S(0))
 ```
+Notation abuse is allowed; we can pretend connections to auxiliary ports are active pairs too.
+```
+Mult(a1 other) = S(0)
+Dup(a0 a1) = S(S(0))
+other = Add(a1 out)
+```
+The original net can be recovered with a simple substitution.
 
-Variables that only appear once are free ports.
+Variables that only appear once are free ports. Other variables must appear exactly twice.
 
-A interaction rule is described by the syntax:
+A interaction rule is described by a syntax similar to the one used by Lafont in his 1991 paper, where the `~` character takes the role of `><`:
 ```
 A(a0 a1 a2 ... an) ~ B(b0 b1 b2 ... bm)
 ```
-
 Here, a{n} represents what will get plugged in to the nth port after the reduction. In other words, the rule syntax encodes the following reduction rule (of course, using fresh variable names):
 ```
 A(a0' a1' a2' ... an') = B(b0' b1' b2' ... bm')
@@ -55,17 +61,24 @@ The `A(...) ~ B(...)` syntax is enough to faithfully represent all possible redu
 
 So, for example, 
 ```
-::(:(Bool.not(value) type)) ~ Bool.not(::(ret_value ret_type)) {
-	value = ret_value
-	type = ~Bool
-	#[ It returns a Boolean through its auxiliary port ]
-	ret_type = Bool
-}
+Mult(Dup(b c) a) ~ S(Times(b Add(c a)))
 ```
 is equivalent to:
 ```
-::(:(Bool.not(value) ~Bool)) ~ Bool.not(::(value Bool))
+Mult(argument result) ~ S(pred) {
+	#[ 
+		This is an implementation of
+		x * S(y) = x * y + x
+
+		x is argument, y is pred.
+	] 
+	argument = Dup(a0 a1)
+	pred = Times(a1 Add(a0 result))
+}
 ```
+This is nice because rules can be self-documenting.
+
+To be clear, `~` defines interaction rules, while `=` is used to represent active pairs inside a net. Usually, `~` will be in top-level definitions, while `=` will appear inside rules to encode which active pairs will appear as the result of a reduction.
 
 ## Type-checking
 
@@ -87,11 +100,17 @@ A type error at the type level happens when the interaction between two types is
 
 Under this scheme, auxiliary ports will have to be replaced by something that can interact with whatever is behind the auxiliary port. So for example, the successor constructor `a = Succ(b)` would get substituted by `a = Nat; b = ~Nat`.
 
-## Inverse types
+## Cotypes
 
 Let's look into more detail into `~T`. `~T` is a special primitive; it's unlike other symbols. It's the type of all types of cells which interact with things of type `T`. In other words, it's the supertype of all types which interact with `T`. It's the _weakest_ and _most general_ type which can interact with `T`
 
 It turns out that if we look at it closely, we realize that `~` is an involutive operator. `~~T` is the supertype of everything that can interact with `~T`. The only thing that is guaranteed to interact with `~T` is `T`, so `~~T = T`
+
+`~` is like linear logic's `⊥` operator, which takes the dual of a proposition.
+
+> Every type A has a dual A^⊥, and returning a re-
+sult of type A is equivalent to consuming an argument of type A^⊥.
+Further, dualization is involutive: (A^⊥)^⊥ = A. [1]
 
 To encode the definition of the `~` operator into the system, we'll introduce the **subtyping property**. If `A ~ B` and `~B ~ C`, then `A ~ C`.
 
@@ -101,7 +120,7 @@ This is enough to encode `~`'s properties.
 
 ### Subtyping
 
-The inverse operator is closely related to subtyping. If anything that can consume a T can also consume an U, then U is effectively a subtype of T. In this system, this looks like `~T ~ U`, which can be used to define `U <= T`.
+The duality operator is closely related to subtyping. If anything that can consume a T can also consume an U, then U is effectively a subtype of T. In this system, this looks like `~T ~ U`, which can be used to define `U <= T`.
 
 If `T <= U`, then `~U <= ~T`
 
@@ -111,7 +130,7 @@ The notion of "substituing" a cell with its type to type-checker can be useful i
 
 This is why, from now on, instead of substituting cells by their type, we'll _annotate_ then with their type by using a new symbol `:`. Roughly, a cell `Value` gets annotated as `:(Value Type)`.
 
-The `:` symbol annihilates itself. So, as a consequence, annotation will do what substitution did before; if two values interact, then their types will interact in the annotated net too.
+The `:` symbol annihilates with itself. So, as a consequence, annotation will do what substitution did before; if two values interact, then their types will interact in the annotated net too.
 
 We can implement the annotation transformation using interaction nets, by introducing a 1-ary `::` agent which is the annotator agent. `::` replaces a cell with its annotated form, and recurses through auxiliary ports, so it can be used to annotate whole trees. Here are some examples:
 
@@ -181,7 +200,7 @@ There's a special net we can construct to check types. To check a rule between s
 A(::(~(a0)) ::(~(a1)) ::(~(a2)) ... ::(~(an))) = B(::(~(b0)) ::(~(b1)) ::(~(b2)) ... ::(~(bm)))
 ```
 
-This uses the `~` agent, which inverts the cells it interacts with, and commutes through auxiliary ports.
+This uses the `~` agent, which turns cells it interacts with into the respective cocells, and commutes through auxiliary ports.
 
 For example, let's type-check `Foo ~ Bar`:
 
@@ -287,3 +306,5 @@ Also, how can I add T6's lifetimes to this?
 This system is very cool, and it's the closest I've gotten so far to an interaction type theory capable of working as the foundation of a proof checker.
 
 Please share any comments, questions, or ideas with me.
+
+[1] https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=19b1cdead55c69b77425c9688da6ba2dae5aa9be

@@ -32,9 +32,9 @@ Trees are either variables, which start with lowercase letters, or cells, which 
 
 ## Special agents
 
-### Inverse agent
+### Duality agent
 
-`~` is the inverse agent. `a = ~(b)` makes `b` the inverse agent of `a`. Each agent type `T` has an inverse agent type `~T`. `~T` is the type of all agents that can interact with agents of type `T`. In other words, it is the supertype of the types of agents that can interact with agents of type `T`. The `~` operator is involutive, so `~~T = T` . 
+`~` is the duality agent. `a = ~(b)` makes `b` the cocell of `a`. Each symbol `T` has an cosymbol `~T`. `~T` is the type of all cells that can interact with cells of type `T`. In other words, it is the supertype of the types of cells that can interact with cells of type `T`. The `~` operator is involutive, so `~~T = T` . 
 
 The `~` agent commutes through auxiliary ports in addition to changing a cell's symbol.
 
